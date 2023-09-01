@@ -616,8 +616,8 @@ WantedBy=multi-user.target
     elif args.service_mode:
         logging.info(">> Running in service mode <<")
         logging.info("Stopping openvpn")
-        try:stop_openvpn()
-        except:logging.error("Failed. Openvpn not running")
+        #try:stop_openvpn()
+        #except:logging.error("Failed. Openvpn not running")
         logging.info("Generating config with randomly chosen gateway")
         generate_random_configuration()
         run_cmd("systemctl restart openvpn-client@riseup.service")
