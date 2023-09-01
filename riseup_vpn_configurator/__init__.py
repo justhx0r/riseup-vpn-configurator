@@ -593,6 +593,7 @@ ExecStart=/usr/local/bin/riseup-vpn-configurator --service-mode
 WantedBy=multi-user.target
             """
             service_file.write(riseup_service)
+        run_cmd("/usr/bin/systemctl daemon-reload")
         run_cmd("/usr/bin/systemctl enable riseup-vpn-configurator.service")
         run_cmd("/usr/bin/systemctl start riseup-vpn-configurator.service")
     elif args.service_mode:
