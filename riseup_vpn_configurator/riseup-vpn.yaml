@@ -9,6 +9,5 @@ port: 53
 # can be an ipaddress, network or hostname
 # your local subnet is excluded by default
 excluded_routes:
-  - 8.8.8.8
-  - 192.168.123.0/24
-  - us02web.zoom.us
+  - 192.168.0.0/16
+  - 10.0.0.0/8
