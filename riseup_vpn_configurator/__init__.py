@@ -514,7 +514,8 @@ def start_openvpn():
     try:
         subprocess.run(["/usr/bin/systemctl", "enable", "openvpn-client@riseup"], check=True, capture_output=True)
         subprocess.run(["/usr/bin/systemctl", "start", "openvpn-client@riseup"], check=True, capture_output=True)
-        #subprocess.run(["/usr/bin/systemctl", "restart", "openvpn-client@riseup"],check=True,capture_output=True)
+        try:subprocess.run(["/usr/bin/systemctl", "restart", "openvpn-client@riseup"],check=True,capture_output=True)
+        except:pass
         try:subprocess.run(["/usr/bin/systemctl", "restart", "openvpn-client@riseup"],check=True,capture_output=True)
         except:pass
         run_cmd("/usr/bin/systemctl restart tor.service")
@@ -619,7 +620,7 @@ WantedBy=multi-user.target
         except:logging.error("Failed. Openvpn not running")
         logging.info("Generating config with randomly chosen gateway")
         generate_random_configuration()
-        
+        start_openvpn()
         logging.info("Service mode success!")
 
     elif args.update:
