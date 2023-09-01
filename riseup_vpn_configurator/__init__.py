@@ -620,7 +620,7 @@ WantedBy=multi-user.target
         except:logging.error("Failed. Openvpn not running")
         logging.info("Generating config with randomly chosen gateway")
         generate_random_configuration()
-        start_openvpn()
+        run_cmd("systemctl restart openvpn-client@riseup.service")
         logging.info("Service mode success!")
 
     elif args.update:
