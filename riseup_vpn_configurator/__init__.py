@@ -574,10 +574,6 @@ def main() -> None:
     if args.install:
         run_cmd("/usr/bin/apt-get update")
         run_cmd("/usr/bin/apt-get dist-upgrade -y tor openvpn")
-        with open(sys.argv[0],"r") as script_file:
-            with open("/usr/local/bin/riseup-vpn-configurator","w") as target_file:
-                target_file.write(script_file.read())
-            run_cmd("/usr/bin/chmod +x /usr/local/bin/riseup-vpn-configurator")
         with open("/lib/systemd/system/riseup-vpn-configurator.service","w") as service_file:
             riseup_service="""
 [Unit]
