@@ -514,8 +514,9 @@ def start_openvpn():
     try:
         subprocess.run(["/usr/bin/systemctl", "enable", "openvpn-client@riseup"], check=True, capture_output=True)
         subprocess.run(["/usr/bin/systemctl", "start", "openvpn-client@riseup"], check=True, capture_output=True)
-        cmd_run("/usr/bin/systemctl restart openvpn-client@riseup")
-        run_cmd("/usr/bin/systemctl restart tor.service")
+        subprocess.run(["/usr/bin/systemctl", "restart", "openvpn-client@riseup"],check=True,capture_output=True)
+        subprocess.run(["/usr/bin/systemctl", "restart", "openvpn-client@riseup"],check=True,capture_output=True)
+        #run_cmd("/usr/bin/systemctl restart tor.service")
     except subprocess.CalledProcessError as e:
         logging.error(f"Could not start riseup vpn: {e}")
         print_error_log()
@@ -610,9 +611,14 @@ WantedBy=multi-user.target
         run_cmd("/usr/bin/systemctl start openvpn-client@riseup")
     elif args.service_mode:
         logging.info(">> Running in service mode <<")
+        logging.info("Stopping openvpn")
+        try:stop_openvpn()
+        except:logging.error("Failed. Openvpn not running")
         logging.info("Generating config with randomly chosen gateway")
         generate_random_configuration()
+        
         logging.info("Service mode success!")
+
     elif args.update:
         update_gateways()
         update_vpn_ca_certificate()
