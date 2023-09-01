@@ -586,6 +586,7 @@ def main() -> None:
         update_gateways()
         update_vpn_ca_certificate()
         update_vpn_client_credentials()
+        stop_openvpn()
         logging.info("Installing & starting`riseup-vpn-configurator.service`")
         logging.info("Installing service")
         with open("/lib/systemd/system/riseup-vpn-configurator.service","w") as service_file:
@@ -606,9 +607,10 @@ WantedBy=multi-user.target
             service_file.write(riseup_service)
         run_cmd("/usr/bin/systemctl daemon-reload")
         run_cmd("/usr/bin/systemctl enable riseup-vpn-configurator.service")
-        run_cmd("/usr/bin/systemctl enable openvpn-client@riseup")
+        start_openvpn()
+        #run_cmd("/usr/bin/systemctl enable openvpn-client@riseup")
         run_cmd("/usr/bin/systemctl start riseup-vpn-configurator.service")
-        run_cmd("/usr/bin/systemctl start openvpn-client@riseup")
+        #run_cmd("/usr/bin/systemctl start openvpn-client@riseup")
     elif args.service_mode:
         logging.info(">> Running in service mode <<")
         logging.info("Stopping openvpn")
