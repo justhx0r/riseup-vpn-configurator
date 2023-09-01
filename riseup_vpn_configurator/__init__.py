@@ -53,31 +53,18 @@ def run_cmd(cmd):
     return subprocess.run(cmd.split(" "), check=True, capture_output=True)
 
 
-def get_random_tcp_gateway(gateway_json: str, bench: bool = False) -> Optional[dict]:
-    with open(gateway_json) as f:
-        j = json.load(f)
-    
-    if bench:
-        logging.info("Listing VPN gateways with latency. Please turn off the VPN before.")
-        for gw in j['gateways']:
-            gw['latency'] = calc_latency(gw['ip_address'])
-        gateways = sorted(j['gateways'], key=lambda gw: gw['latency'])
-    else:
-        gateways = sorted(j['gateways'], key=lambda gw: gw['location'])
-    
-    tcp_gateways = [gw for gw in gateways if 'tcp' in gw['capabilities']['transport'][0]['protocols']]
-    
-    if not tcp_gateways:
-        return None
-    
-    selected_gateway = choice(tcp_gateways)
-    
+def get_random_tcp_gateway(bench: bool = False) -> Optional[dict]:
+    gateways=subprocess.getoutput(f'{sys.argv[0]} -l | /usr/bin/tr --squeeze-repeats " "|/usr/bin/awk "/tcp/"').split("\n")
+    gws=[]
+    gw=choice(gateways)
+    ports=gw.split(" ")[4].split("=")[1].split(",")
+
     return {
-        'hostname': selected_gateway['host'],
-        'ip_address': selected_gateway['ip_address'],
+        'hostname': gw.split(" ")[0],
+        'ip_address': gw.split(" ")[2].split("=")[1],
         'proto': 'tcp',
-        'port': random.choice(selected_gateway['capabilities']['transport'][0]['ports']),
-        'location': selected_gateway['location'],
+        'port': choice(ports),
+        'location': gw.split(" ")[1].split("=")[1],
     }
 
 def calc_latency(ip: str) -> float:
