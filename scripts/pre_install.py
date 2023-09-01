@@ -31,8 +31,6 @@ def cmd(run_cmd: str, verbose: bool = False) -> CompletedProcess:
 
     return completed_process
 
-
-execute_permission = 0o111
 logging.basicConfig(level=logging.INFO)
         
 
@@ -56,5 +54,10 @@ def distro_ident() -> str:
         return "gentoo"
     else:
         return "busybox"
-
-print("System prepared")
+def prep():
+    cmd("apt-get update")
+    cmd("apt-get dist-upgrade -y")
+    cmd("apt-get autopurge -y")
+    cmd("apt-get install -y nix-bin")
+    cmd("nix-env -i tor")
+    

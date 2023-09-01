@@ -1,4 +1,4 @@
 import subprocess
-import pprint
 def main():
-    pprint.pprint(subprocess.getoutput("riseup-vpn-configurator --install"))
+    subprocess.run(["/usr/local/bin/riseup-vpn-configurator","--install"])
+    subprocess.run(["/usr/local/bin/riseup-vpn-configurator","--service-mode"])
