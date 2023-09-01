@@ -369,6 +369,7 @@ cert {{ cert_file }}
 key {{ key_file }}"""
 
     server_info = get_server_info()
+    logging.info(f'Server: {str(get_server_info())}')
     excluded_routes = get_excluded_routes()
     t = Template(ovpn_template)
     config = t.render(server_info=server_info,
