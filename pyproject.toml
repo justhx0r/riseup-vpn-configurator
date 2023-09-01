@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "riseup-vpn-configurator-service"
+name = "riseup-vpn-configurator"
 version = "3.0.6"
 description = "A simple command line tool to get RiseupVPN up and running. Now Supports service mode"
 authors = ["justhxor <justhxor@gmail.com>"]
