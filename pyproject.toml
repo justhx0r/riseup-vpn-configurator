@@ -39,11 +39,13 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 riseup-vpn-configurator = 'riseup_vpn_configurator.__init__:main'
+pre-install-script = "scripts/pre_install.sh"
+post-install-script = "scripts/post_install.sh"
+
+
+
 [tool.setuptools.package-data]
 riseup_vpn_configurator = ["riseup_vpn_configurator/riseup-vpn.yaml"]
 
 [tool.mypy]
 ignore_missing_imports = true
-[tool.setuptools.install_scripts]
-before = ["pre_install.sh"]
-after = ["post_install.sh"]
