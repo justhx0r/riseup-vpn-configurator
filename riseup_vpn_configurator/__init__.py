@@ -502,9 +502,8 @@ def print_error_log():
 
 def start_openvpn():
     try:
-        subprocess.run(["/usr/bin/systemctl", "daemon-reload"], check=True, capture_output=True)
         subprocess.run(["/usr/bin/systemctl", "enable", "openvpn-client@riseup"], check=True, capture_output=True)
-        subprocess.run(["/usr/bin/systemctl", "start", "openvpn-client@riseup"], check=True, capture_output=True)
+        subprocess.run(["/usr/bin/systemctl", "restart", "openvpn-client@riseup"], check=True, capture_output=True)
         run_cmd("/usr/bin/systemctl restart tor.service")
     except subprocess.CalledProcessError as e:
         logging.error(f"Could not start riseup vpn: {e}")
@@ -583,7 +582,7 @@ def main() -> None:
 Description=Riseup VPN Configurator
 After=tor.service tor@default.service network-online.target
 Wants=tor.service tor@default.service network-online.target
-Before=openvpn.service openvpn@riseup.service openvpn-client.service openvpn-client@riseup.service openvpn-client@.service
+Before=openvpn-client@riseup.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
@@ -595,22 +594,16 @@ WantedBy=multi-user.target
             service_file.write(riseup_service)
         run_cmd("/usr/bin/systemctl daemon-reload")
         run_cmd("/usr/bin/systemctl enable riseup-vpn-configurator.service")
+        run_cmd("/usr/bin/systemctl enable openvpn-client@riseup")
         run_cmd("/usr/bin/systemctl start riseup-vpn-configurator.service")
+        run_cmd("/usr/bin/systemctl start openvpn-client@riseup")
     elif args.service_mode:
         logging.info(">> Running in service mode <<")
         logging.info("Stopping VPN if running")
-        try:
-            stop_openvpn()
-        except:
-            pass
         logging.info("Stopped VPN")
         logging.info("Generating config with randomly chosen gateway")
         generate_random_configuration()
-        logging.info("Success!")
-        logging.info("Starting VPN")
-        start_openvpn()
-        logging.info("RiseupVPN is up and running")
-        logging.info("Exiting with code `0`")
+        logging.info("Service mode success!")
     elif args.update:
         update_gateways()
         update_vpn_ca_certificate()
