@@ -571,7 +571,7 @@ def main() -> None:
 
     check_working_directory()
     if args.install:
-        logging.info("Installing & starting`riseup-vpn-configurator.service`"))
+        logging.info("Installing & starting`riseup-vpn-configurator.service`")
         logging.info("Installing service")
         with open("/lib/systemd/system/riseup-vpn-configurator.service","w") as service_file:
             riseup_service="""
