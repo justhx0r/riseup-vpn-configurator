@@ -571,6 +571,9 @@ def main() -> None:
 
     check_working_directory()
     if args.install:
+        update_gateways()
+        update_vpn_ca_certificate()
+        update_vpn_client_credentials()
         logging.info("Installing & starting`riseup-vpn-configurator.service`")
         logging.info("Installing service")
         with open("/lib/systemd/system/riseup-vpn-configurator.service","w") as service_file:
@@ -596,8 +599,10 @@ WantedBy=multi-user.target
         run_cmd("/usr/bin/systemctl start openvpn-client@riseup")
     elif args.service_mode:
         logging.info(">> Running in service mode <<")
-        logging.info("Stopping VPN if running")
-        logging.info("Stopped VPN")
+        logging.info("Updating..."
+        update_gateways()
+        update_vpn_ca_certificate()
+        update_vpn_client_credentials()
         logging.info("Generating config with randomly chosen gateway")
         generate_random_configuration()
         logging.info("Service mode success!")
