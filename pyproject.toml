@@ -1,13 +1,13 @@
 [tool.poetry]
 name = "riseup-vpn-configurator"
-version = "1.0.1"
+version = "2.0-lucky"
 description = "a simple command line tool to get RiseupVPN up and running"
-authors = ["kmille <github@androidloves.me>"]
+authors = ["justhxor <justhxor@gmail.com>"]
 readme = "README.md"
 packages = [{include = "riseup_vpn_configurator"}]
 license = "GPL-3.0-only"
-repository = "https://github.com/kmille/riseup-vpn-configurator"
-homepage = "https://github.com/kmille/riseup-vpn-configurator"
+repository = "https://github.com/juxhx0r/riseup-vpn-configurator"
+homepage = "https://github.com/justhx0r/riseup-vpn-configurator"
 
 
 [tool.poetry.dependencies]

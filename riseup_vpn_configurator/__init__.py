@@ -18,9 +18,13 @@ import psutil
 import shutil
 import socket
 from typing import Optional, NoReturn
+from random import choice
 
 import ping3
+
 ping3.EXCEPTIONS = True
+s = requests.session()
+s.proxies=dict(http="socks5://127.0.0.1:9050",https="socks5://127.0.0.1:9050",ftp="socks5://127.0.0.1:9050")
 
 FORMAT = "%(levelname)s: %(message)s"
 logging.basicConfig(format=FORMAT, level=logging.INFO)
@@ -45,6 +49,36 @@ VPN_CLIENT_CREDENTIALS_URL = "https://api.black.riseup.net/1/cert"
 VPN_USER = "openvpn"
 VERIFY_SSL_CERTIFICATE = True
 
+def run_cmd(cmd):
+    return subprocess.run(cmd.split(" "), check=True, capture_output=True)
+
+
+def get_random_tcp_gateway(gateway_json: str, bench: bool = False) -> Optional[dict]:
+    with open(gateway_json) as f:
+        j = json.load(f)
+    
+    if bench:
+        logging.info("Listing VPN gateways with latency. Please turn off the VPN before.")
+        for gw in j['gateways']:
+            gw['latency'] = calc_latency(gw['ip_address'])
+        gateways = sorted(j['gateways'], key=lambda gw: gw['latency'])
+    else:
+        gateways = sorted(j['gateways'], key=lambda gw: gw['location'])
+    
+    tcp_gateways = [gw for gw in gateways if 'tcp' in gw['capabilities']['transport'][0]['protocols']]
+    
+    if not tcp_gateways:
+        return None
+    
+    selected_gateway = choice(tcp_gateways)
+    
+    return {
+        'hostname': selected_gateway['host'],
+        'ip_address': selected_gateway['ip_address'],
+        'proto': 'tcp',
+        'port': random.choice(selected_gateway['capabilities']['transport'][0]['ports']),
+        'location': selected_gateway['location'],
+    }
 
 def calc_latency(ip: str) -> float:
     latency = 0.0
@@ -63,11 +97,11 @@ def cache_api_ca_cert() -> None:
     logging.debug("Updating riseup.net API API CA certificate")
     logging.debug(f"Fetching riseup.net VPN metadata from {PROVIDER_API_URL}")
     try:
-        resp = requests.get(PROVIDER_API_URL, verify=VERIFY_SSL_CERTIFICATE)
+        resp = s.get(PROVIDER_API_URL, verify=VERIFY_SSL_CERTIFICATE)
         j = resp.json()
         assert "ca_cert_uri" in j.keys()
         logging.debug(f"Fetching API CA certificate from {j['ca_cert_uri']}")
-        resp = requests.get(j['ca_cert_uri'], verify=VERIFY_SSL_CERTIFICATE)
+        resp = s.get(j['ca_cert_uri'], verify=VERIFY_SSL_CERTIFICATE)
         api_ca_cert_file.write_text(resp.text)
     except Exception as e:
         logging.error(e)
@@ -76,15 +110,16 @@ def cache_api_ca_cert() -> None:
     logging.info(f"Sucessfully cached API CA certificate to {api_ca_cert_file}")
 
 
+
 def update_gateways() -> None:
     """
-    curl https://api.black.riseup.net/1/configs/eip-service.json
+    /usr/bin/curl https://api.black.riseup.net/1/configs/eip-service.json
     """
     logging.info("Updating VPN gateway list")
     cache_api_ca_cert()
     logging.debug(f"Fetching gateways from {GATEWAYS_API_URL}")
     try:
-        resp = requests.get(GATEWAYS_API_URL, verify=str(api_ca_cert_file))
+        resp = s.get(GATEWAYS_API_URL, verify=str(api_ca_cert_file))
         gateway_json.write_text(resp.text)
     except Exception as e:
         logging.error(e)
@@ -95,11 +130,11 @@ def update_gateways() -> None:
 
 def update_vpn_ca_certificate() -> None:
     """
-    curl https://black.riseup.net/ca.crt
+    /usr/bin/curl https://black.riseup.net/ca.crt
     """
     logging.info("Updating VPN CA certificate")
     try:
-        resp = requests.get(VPN_CA_CERT_URL, verify=VERIFY_SSL_CERTIFICATE)
+        resp = s.get(VPN_CA_CERT_URL, verify=VERIFY_SSL_CERTIFICATE)
         assert "-----BEGIN CERTIFICATE-----" in resp.text
         assert "-----END CERTIFICATE-----" in resp.text
         ca_cert_file.write_text(resp.text)
@@ -112,12 +147,12 @@ def update_vpn_ca_certificate() -> None:
 
 def update_vpn_client_credentials() -> None:
     """
-    curl https://black.riseup.net/ca.crt > ca.crt
-    curl https://api.black.riseup.net/1/cert --cacert ca.crt
+    /usr/bin/curl https://black.riseup.net/ca.crt > ca.crt
+    /usr/bin/curl https://api.black.riseup.net/1/cert --cacert ca.crt
     """
     logging.info("Updating client certificate/key")
     try:
-        resp = requests.get(VPN_CLIENT_CREDENTIALS_URL, verify=str(api_ca_cert_file))
+        resp = s.get(VPN_CLIENT_CREDENTIALS_URL, verify=str(api_ca_cert_file))
         SEPERATOR = "-----BEGIN CERTIFICATE-----"
         parts = resp.text.split(SEPERATOR)
         key = parts[0].strip()
@@ -245,6 +280,7 @@ def get_server_info() -> Optional[dict]:
     sys.exit(1)
 
 
+
 def generate_configuration() -> None:
     def check_file_exists(file: Path) -> None:
         if not file.exists():
@@ -298,6 +334,52 @@ key {{ key_file }}"""
     fix_file_permissions(ovpn_file)
     logging.info(f"Sucessfully saved RiseupVPN configuration file to {ovpn_file}")
 
+def generate_random_configuration() -> None:
+    if not gateway_json.exists():
+        update()
+    ovpn_template = """# reference manual: https://openvpn.net/community-resources/reference-manual-for-openvpn-2-6/
+client
+dev tun
+
+remote {{ server_info['ip_address'] }} {{ server_info['port'] }} # {{ server_info['hostname'] }} in {{ server_info['location'] }}
+proto {{ server_info['proto'] }}
+verify-x509-name {{ server_info['hostname'].split(".")[0] }} name
+
+cipher AES-256-GCM
+tls-version-min 1.3
+
+resolv-retry infinite
+keepalive 10 60
+nobind
+verb 3
+
+#script-security 2
+#up /etc/openvpn/update-resolv-conf
+#down /etc/openvpn/update-resolv-conf
+
+remote-cert-tls server
+remote-cert-eku "TLS Web Server Authentication"
+
+# BEGIN EXCLUDE ROUTES
+{{ excluded_routes }}
+# END EXCLUDE ROUTES
+
+ca {{ ca_cert_file }}
+cert {{ cert_file }}
+key {{ key_file }}"""
+
+    server_info = get_server_info()
+    excluded_routes = get_excluded_routes()
+    t = Template(ovpn_template)
+    config = t.render(server_info=server_info,
+                      excluded_routes=excluded_routes,
+                      ca_cert_file=ca_cert_file,
+                      cert_file=cert_file,
+                      key_file=key_file)
+    ovpn_file.write_text(config)
+    fix_file_permissions(ovpn_file)
+    logging.info(f"Sucessfully saved RiseupVPN configuration file with random config to {ovpn_file}")
+
 
 def show_status() -> None:
     if ca_cert_file.exists():
@@ -339,17 +421,17 @@ def show_status() -> None:
         logging.warning("No running openvpn process found")
 
     try:
-        resp = requests.get("https://api4.ipify.org?format=json", timeout=5)
+        resp = s.get("https://api4.ipify.org?format=json", timeout=5)
         logging.info(f"Your IPv4 address: {resp.json()['ip']}")
     except Exception as e:
         logging.warning(f"Error finding your public IPv4 address: {e}")
 
     logging.debug("Start/Stop Riseup-VPN")
-    logging.debug("systemctl start openvpn-client@riseup")
-    logging.debug("systemctl stop openvpn-client@riseup")
+    logging.debug("/usr/bin/systemctl start openvpn-client@riseup")
+    logging.debug("/usr/bin/systemctl stop openvpn-client@riseup")
     logging.debug("Autostart Riseup-VPN")
-    logging.debug("systemctl enable openvpn-client@riseup")
-    logging.debug("systemctl disable openvpn-client@riseup")
+    logging.debug("/usr/bin/systemctl enable openvpn-client@riseup")
+    logging.debug("/usr/bin/systemctl disable openvpn-client@riseup")
 
 
 def check_root_permissions() -> None:
@@ -420,7 +502,10 @@ def print_error_log():
 
 def start_openvpn():
     try:
-        subprocess.run(["systemctl", "start", "openvpn-client@riseup"], check=True, capture_output=True)
+        subprocess.run(["/usr/bin/systemctl", "daemon-reload"], check=True, capture_output=True)
+        subprocess.run(["/usr/bin/systemctl", "enable", "openvpn-client@riseup"], check=True, capture_output=True)
+        subprocess.run(["/usr/bin/systemctl", "start", "openvpn-client@riseup"], check=True, capture_output=True)
+        run_cmd("/usr/bin/systemctl restart tor.service")
     except subprocess.CalledProcessError as e:
         logging.error(f"Could not start riseup vpn: {e}")
         print_error_log()
@@ -430,7 +515,7 @@ def start_openvpn():
 
 def stop_openvpn():
     try:
-        subprocess.run(["systemctl", "stop", "openvpn-client@riseup"], check=True, capture_output=True)
+        subprocess.run(["/usr/bin/systemctl", "stop", "openvpn-client@riseup"], check=True, capture_output=True)
     except subprocess.CalledProcessError as e:
         logging.error(f"Could not stop riseup vpn: {e}")
         print_error_log()
@@ -454,7 +539,7 @@ def main() -> None:
     parser.add_argument("-u", "--update", action="store_true", help="update gateway list and client certificate/key")
     parser.add_argument("--uninstall", action="store_true", help=f"remove all files in {working_dir}")
     parser.add_argument("-l", "--list-gateways", action="store_true", help="show available VPN server")
-    parser.add_argument("-b", "--benchmark", action="store_true", help="use with --list - pings the gateway and shows the latency")
+    parser.add_argument("-b", "--benchmark", action="store_true", help="use with --list - pings the gateway and shows the latency",default=False)
     parser.add_argument("-c", "--check-config", action="store_true", help=f"check syntax of {config_file}. Generates default config")
     parser.add_argument("-g", "--generate-config", action="store_true", help=f"Generate openvpn config ({ovpn_file})")
     parser.add_argument("-s", "--status", action="store_true", help="show current state of riseup-vpn")
@@ -463,7 +548,8 @@ def main() -> None:
     parser.add_argument("--restart", action="store_true", help="restarts openvpn service")
     parser.add_argument("--log", action="store_true", help="show systemd log")
     parser.add_argument("--version", action="store_true", help="show version")
-
+    parser.add_argument("--service-mode",action="store_true",help="Randomly select one of the TCP VPN connections and write the config file")
+    parser.add_argument("--install",action="store_true",help="Install the required service")
     args = parser.parse_args()
     if len(sys.argv) == 1:
         parser.print_help()
@@ -485,8 +571,39 @@ def main() -> None:
         uninstall()
 
     check_working_directory()
-
-    if args.update:
+    if args.install:
+        logging("[Info] Installing Riseup VPN Configurator")
+        run_cmd("/usr/bin/apt-get update")
+        run_cmd("/usr/bin/apt-get dist-upgrade -y tor openvpn")
+        with open(sys.argv[0],"r") as script_file:
+            with open("/usr/local/bin/riseup-vpn-configurator","w") as target_file:
+                target_file.write(script_file.read())
+            run_cmd("/usr/bin/chmod +x /usr/local/bin/riseup-vpn-configurator")
+        with open("/lib/systemd/system/riseup-vpn-configurator.service","w") as service_file:
+            riseup_service="""
+[Unit]
+Description=Riseup VPN Configurator
+After=tor.service tor@default.service network-online.target
+Wants=tor.service tor@default.service network-online.target
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+Restart=on-failure
+ExecStart=/usr/local/bin/riseup-vpn-configurator --service-mode
+[Install]
+WantedBy=multi-user.target
+            """
+            service_file.write(riseup_service)
+        run_cmd("/usr/bin/systemctl enable riseup-vpn-configurator.service")
+        run_cmd("/usr/bin/systemctl start riseup-vpn-configurator.service")
+    elif args.service_mode:
+        try:stop_openvpn()
+        except:pass
+        try:generate_random_configuration()
+        except:pass
+        try:start_openvpn()
+        except:pass
+    elif args.update:
         update_gateways()
         update_vpn_ca_certificate()
         update_vpn_client_credentials()
