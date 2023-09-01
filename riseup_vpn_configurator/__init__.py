@@ -515,8 +515,9 @@ def start_openvpn():
         subprocess.run(["/usr/bin/systemctl", "enable", "openvpn-client@riseup"], check=True, capture_output=True)
         subprocess.run(["/usr/bin/systemctl", "start", "openvpn-client@riseup"], check=True, capture_output=True)
         #subprocess.run(["/usr/bin/systemctl", "restart", "openvpn-client@riseup"],check=True,capture_output=True)
-        #subprocess.run(["/usr/bin/systemctl", "restart", "openvpn-client@riseup"],check=True,capture_output=True)
-        #run_cmd("/usr/bin/systemctl restart tor.service")
+        try:subprocess.run(["/usr/bin/systemctl", "restart", "openvpn-client@riseup"],check=True,capture_output=True)
+        except:pass
+        run_cmd("/usr/bin/systemctl restart tor.service")
     except subprocess.CalledProcessError as e:
         logging.error(f"Could not start riseup vpn: {e}")
         print_error_log()
