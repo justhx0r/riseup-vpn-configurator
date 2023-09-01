@@ -572,7 +572,6 @@ def main() -> None:
 
     check_working_directory()
     if args.install:
-        logging("[Info] Installing Riseup VPN Configurator")
         run_cmd("/usr/bin/apt-get update")
         run_cmd("/usr/bin/apt-get dist-upgrade -y tor openvpn")
         with open(sys.argv[0],"r") as script_file:
