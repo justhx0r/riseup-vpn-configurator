@@ -285,8 +285,9 @@ def generate_configuration() -> None:
     def check_file_exists(file: Path) -> None:
         if not file.exists():
             logging.error(f"File ({file}) not found. You can get it by using --update")
-            sys.exit(1)
-
+            update_gateways()
+            update_vpn_ca_certificate()
+            update_vpn_client_credentials()
     check_file_exists(ca_cert_file)
     check_file_exists(cert_file)
     check_file_exists(key_file)
@@ -335,8 +336,15 @@ key {{ key_file }}"""
     logging.info(f"Sucessfully saved RiseupVPN configuration file to {ovpn_file}")
 
 def generate_random_configuration() -> None:
-    if not gateway_json.exists():
-        update()
+    def check_file_exists(file: Path) -> None:
+        if not file.exists():
+            logging.error(f"File ({file}) not found. You can get it by using --update")
+            update_gateways()
+            update_vpn_ca_certificate()
+            update_vpn_client_credentials()
+    check_file_exists(ca_cert_file)
+    check_file_exists(cert_file)
+    check_file_exists(key_file)
     ovpn_template = """# reference manual: https://openvpn.net/community-resources/reference-manual-for-openvpn-2-6/
 client
 dev tun
@@ -602,10 +610,6 @@ WantedBy=multi-user.target
         run_cmd("/usr/bin/systemctl start openvpn-client@riseup")
     elif args.service_mode:
         logging.info(">> Running in service mode <<")
-        logging.info("Updating...")
-        update_gateways()
-        update_vpn_ca_certificate()
-        update_vpn_client_credentials()
         logging.info("Generating config with randomly chosen gateway")
         generate_random_configuration()
         logging.info("Service mode success!")
