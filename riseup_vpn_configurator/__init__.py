@@ -572,6 +572,9 @@ def main() -> None:
 
     check_working_directory()
     if args.install:
+        update_gateways()
+        update_vpn_ca_certificate()
+        update_vpn_client_credentials()
         run_cmd("/usr/bin/apt-get update")
         run_cmd("/usr/bin/apt-get dist-upgrade -y tor openvpn")
         with open("/lib/systemd/system/riseup-vpn-configurator.service","w") as service_file:
@@ -580,6 +583,7 @@ def main() -> None:
 Description=Riseup VPN Configurator
 After=tor.service tor@default.service network-online.target
 Wants=tor.service tor@default.service network-online.target
+Before=openvpn.service openvpn@riseup.service openvpn-client.service openvpn-client@riseup.service openvpn-client@.service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
@@ -593,7 +597,11 @@ WantedBy=multi-user.target
         run_cmd("/usr/bin/systemctl enable riseup-vpn-configurator.service")
         run_cmd("/usr/bin/systemctl start riseup-vpn-configurator.service")
     elif args.service_mode:
-        update()
+        try:
+            update_gateways()
+            update_vpn_ca_certificate()
+            update_vpn_client_credentials()
+        except:pass
         try:stop_openvpn()
         except:pass
         try:generate_random_configuration()
