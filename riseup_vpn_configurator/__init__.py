@@ -609,9 +609,9 @@ WantedBy=multi-user.target
             service_file.write(riseup_service)
         run_cmd("/usr/bin/systemctl daemon-reload")
         run_cmd("/usr/bin/systemctl enable riseup-vpn-configurator.service")
-        start_openvpn()
         #run_cmd("/usr/bin/systemctl enable openvpn-client@riseup")
-        run_cmd("/usr/bin/systemctl start riseup-vpn-configurator.service")
+        run_cmd("/usr/bin/systemctl restart riseup-vpn-configurator.service")
+        start_openvpn()
         #run_cmd("/usr/bin/systemctl start openvpn-client@riseup")
     elif args.service_mode:
         logging.info(">> Running in service mode <<")
@@ -620,7 +620,7 @@ WantedBy=multi-user.target
         #except:logging.error("Failed. Openvpn not running")
         logging.info("Generating config with randomly chosen gateway")
         generate_random_configuration()
-        run_cmd("systemctl restart openvpn-client@riseup.service")
+        #run_cmd("systemctl restart openvpn-client@riseup.service")
         logging.info("Service mode success!")
 
     elif args.update:
