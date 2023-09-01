@@ -572,11 +572,11 @@ def main() -> None:
 
     check_working_directory()
     if args.install:
-        logging.info("INFO: Installing & starting`riseup-vpn-configurator.service`")
-        logging.info("INFO: Installing required packages")
+        logging.info("Installing & starting`riseup-vpn-configurator.service`")
+        logging.info("Installing required packages")
         run_cmd("/usr/bin/apt-get update")
         run_cmd("/usr/bin/apt-get dist-upgrade -y tor openvpn")
-        logging.info("INFO: Installing service")
+        logging.info("Installing service")
         with open("/lib/systemd/system/riseup-vpn-configurator.service","w") as service_file:
             riseup_service="""
 [Unit]
@@ -597,24 +597,24 @@ WantedBy=multi-user.target
         run_cmd("/usr/bin/systemctl enable riseup-vpn-configurator.service")
         run_cmd("/usr/bin/systemctl start riseup-vpn-configurator.service")
     elif args.service_mode:
-        logging.info("INFO: >> Running in service mode <<")
-        logging.info("INFO: This will update the gateway list, randomly choose one, write the config file and finally start the service & refresh tor!")
+        logging.info(">> Running in service mode <<")
+        logging.info("This will update the gateway list, randomly choose one, write the config file and finally start the service & refresh tor!")
         try:
             update_gateways()
             update_vpn_ca_certificate()
             update_vpn_client_credentials()
         except:pass
-        logging.info("INFO: Stopping VPN if running")
+        logging.info("Stopping VPN if running")
         try:stop_openvpn()
         except:pass
-        logging.info("INFO: Stopped VPN")
-        logging.info("INFO: Generating config with randomly chosen gateway")
+        logging.info("Stopped VPN")
+        logging.info("Generating config with randomly chosen gateway")
         generate_random_configuration()
-        logging.info("INFO: Success!")
-        logging.info("INFO: Starting VPN")
+        logging.info("Success!")
+        logging.info("Starting VPN")
         start_openvpn()
-        logging.info("INFO: RiseupVPN is up and running")
-        logging.info("INFO: Exiting with code `0`")
+        logging.info("RiseupVPN is up and running")
+        logging.info("Exiting with code `0`")
     elif args.update:
         update_gateways()
         update_vpn_ca_certificate()
