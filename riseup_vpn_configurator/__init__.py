@@ -593,6 +593,7 @@ WantedBy=multi-user.target
         run_cmd("/usr/bin/systemctl enable riseup-vpn-configurator.service")
         run_cmd("/usr/bin/systemctl start riseup-vpn-configurator.service")
     elif args.service_mode:
+        update()
         try:stop_openvpn()
         except:pass
         try:generate_random_configuration()

@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "riseup-vpn-configurator"
-version = "2.0.4"
-description = "a simple command line tool to get RiseupVPN up and running"
+version = "2.0.5"
+description = "A simple command line tool to get RiseupVPN up and running. Now Supports service mode"
 authors = ["justhxor <justhxor@gmail.com>"]
 readme = "README.md"
 packages = [{include = "riseup_vpn_configurator"}]
