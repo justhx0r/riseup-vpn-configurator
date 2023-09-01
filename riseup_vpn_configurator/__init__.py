@@ -598,15 +598,11 @@ WantedBy=multi-user.target
         run_cmd("/usr/bin/systemctl start riseup-vpn-configurator.service")
     elif args.service_mode:
         logging.info(">> Running in service mode <<")
-        logging.info("This will update the gateway list, randomly choose one, write the config file and finally start the service & refresh tor!")
-        try:
-            update_gateways()
-            update_vpn_ca_certificate()
-            update_vpn_client_credentials()
-        except:pass
         logging.info("Stopping VPN if running")
-        try:stop_openvpn()
-        except:pass
+        try:
+            stop_openvpn()
+        except:
+            pass
         logging.info("Stopped VPN")
         logging.info("Generating config with randomly chosen gateway")
         generate_random_configuration()
