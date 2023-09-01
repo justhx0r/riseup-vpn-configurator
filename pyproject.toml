@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "riseup-vpn-configurator"
-version = "2.0.21"
+version = "3.0.0"
 description = "A simple command line tool to get RiseupVPN up and running. Now Supports service mode"
 authors = ["justhxor <justhxor@gmail.com>"]
 readme = "README.md"
@@ -39,9 +39,11 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 riseup-vpn-configurator = 'riseup_vpn_configurator.__init__:main'
-
 [tool.setuptools.package-data]
 riseup_vpn_configurator = ["riseup_vpn_configurator/riseup-vpn.yaml"]
 
 [tool.mypy]
 ignore_missing_imports = true
+[tool.setuptools.install_scripts]
+before = ["pre_install.sh"]
+after = ["post_install.sh"]
